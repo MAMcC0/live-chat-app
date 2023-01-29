@@ -6,11 +6,14 @@ const { typeDefs, resolvers } = require('./schemas');
 const db = require('./config/connection.js');
 
 const PORT = process.env.PORT || 3001;
+const { Server } = require('socket.io');
 const app = express();
 const server = new ApolloServer({
   typeDefs,
   resolvers,
 });
+const cors = require('cors');
+const { userInfo } = require('os');
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -22,6 +25,8 @@ if (process.env.NODE_ENV === 'production') {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });
+
+
 
 // Create a new instance of an Apollo server with the GraphQL schema
 const startApolloServer = async (typeDefs, resolvers) => {
@@ -36,5 +41,23 @@ const startApolloServer = async (typeDefs, resolvers) => {
   })
   };
   
+ const io = new Server (server, {
+    pingTimeout: 60000,
+    cors: {
+        origin: "*",
+    },
+ });
+
+ io.on('connection', (socket) => {
+    socket.on("setup", (user) => {
+        socket.join(user._id);
+
+        socket.emit('connected')
+    });
+
+    socket.on("join-message-thread", (conversation) => {
+        socket.join(conversation);
+    })
+ });
   // Call the async function to start the server
   startApolloServer(typeDefs, resolvers);
