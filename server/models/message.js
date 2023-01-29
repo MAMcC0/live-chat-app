@@ -8,6 +8,9 @@ const messageSchema = new Schema({
         minlength: 1,
         maxlength: 280,
 },
+    isRead:{
+        type:Boolean
+    },
     recipient: [
         {
             type: Schema.Types.ObjectId,
