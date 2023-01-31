@@ -11,18 +11,7 @@ const messageSchema = new Schema({
     isRead:{
         type:Boolean
     },
-    recipient: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-        }
-    ],
-    sender:  [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-        }
-    ],
+
 });
 
 const Message = model('Workout', workoutSchema);

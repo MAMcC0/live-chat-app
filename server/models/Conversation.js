@@ -1,14 +1,13 @@
 const { Schema, model, Types } = require('mongoose');
 
 const conversationSchema = new Schema ({
-    recipients: [
+    users: [
         {type: Schema.Types.ObjectId, ref: 'user'}
     ],
 
-    date: {
-        type: String,
-        default: Date.now
-    },
+    messages: [{
+        type:Schema.Types.ObjectId, ref: 'message'
+    }],
 });
 
 const Conversation = model('Conversation', conversationSchema);

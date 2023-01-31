@@ -1,6 +1,6 @@
 // importin data
 const { AuthenticationError} = require('apollo-server-express');
-const { User, Message } = require('../models');
+const { User, Message, Conversation } = require('../models');
 const { signToken } = require('../utils/auth');
 
 const resolvers = {
@@ -15,21 +15,59 @@ const resolvers = {
             throw new AuthenticationError ("Please log in!")
         },
 
-        listAllUserMessages: async (parent, {_id}) => {
-            return Message.find(
+        listAllUserConversations: async (parent, {_id}) => {
+            return User.find(
                 {_id: _id}
-            ).populate('user');
+            ).populate({path: 'conversations', populate: {path: 'messages'}});
         }
     },
 
     Mutation: {
         
+        newConversation: async (parent, {conversationContent}, context) => {
+            try {
+                if(context.user){
+                    const conversationData = await Conversation.create(
+                        { users: conversationContent.users}
+                    )
+
+                    let updatedConversationData = await Conversation.findOneAndUpdate(
+                        {_id: conversationData._id},
+                        { new: true},
+                    ).populate('conversation')
+
+                    const addtoUserConversations = await User.findOneAndUpdate(
+                        {_id:context.user._id},
+                        { $push: {conversation: updatedConversationData._id}},
+                        { new: true}
+                    )
+
+                    return addtoUserConversations;
+                }
+            } catch (err){
+                console.log(err)
+                throw new AuthenticationError ('Make sure you are logged in!')
+            }
+        },
+
+        deleteConversation: async (parent, {_id}, context) => {
+                if(context.user){
+                    const updatedConversationData = await User.findByIdAndUpdate(
+                    {_id: context.user._id},
+                    { $pull: {conversation: _id}},
+                    { new: true}
+                ).populate('conversation')
+                return updatedConversationData
+                    
+                }
+            
+        },
 
         newMessage: async (parent, {messageContent}, context) => {
             try{
                 if (context.user){
                     const messageData = await Message.create(
-                        { messageBody: messageContent.messageBody, recipient: messageContent.recipient}
+                        { messageBody: messageContent.messageBody}
                     )
 
                     let updatedMessageData = await Message.findOneAndUpdate(
@@ -58,7 +96,7 @@ const resolvers = {
                     {_id: context.user._id},
                     { $pull: {message: _id}},
                     { new: true}
-                ).populate('messages')
+                ).populate('message')
                 return updatedMessageData
             }
             throw new AuthenticationError('You need to be loggin in!');
