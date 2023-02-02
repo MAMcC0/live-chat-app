@@ -6,7 +6,7 @@ const User = require('../models/user.js');
 const {signToken}= require('../utils/auth');
 
 //Create user
-router.post('/signup', auth, async (req,res) => {
+router.post('/signup', async (req,res) => {
     try {
         User.findOne(
             {username: req.body.email}
@@ -63,3 +63,5 @@ router.post('/login', async (req, res) => {
     }
 })
 
+//add another User to users contact list
+//add contact list to model
