@@ -1,63 +1,67 @@
 const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
-const path = require('path');
-
-const { typeDefs, resolvers } = require('./schemas');
-const db = require('./config/connection.js');
-
-const PORT = process.env.PORT || 3001;
-const { Server } = require('socket.io');
 const app = express();
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
-const cors = require('cors');
-const { userInfo } = require('os');
+const dotenv = require('dotenv');
 
-app.use(express.urlencoded({ extended: false }));
+dotenv.config()
+
+const cors = require('cors');
+const mongoose = require('mongoose');
+const PORT = process.env.PORT || 3001
+const conversationRoutes = require('./routes/conversationRoutes');
+const userRoutes = require('./routes/userRoutes');
+const messageRoute = require('./routes/messageRoute');
+const socket = require('socket.io');
+
+//Mongoose connection
+const connection = require("./config/connection");
+
+//Auth middleware
+const auth = require('./utils/auth');
+
+app.use(cors())
 app.use(express.json());
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
-}
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build/index.html'));
+//routes
+app.use('/api/user', auth, userRoutes);
+app.use('/api/conversation', auth, conversationRoutes);
+app.use('api/messages', auth, messageRoute);
+
+const start = () => {
+  try {
+    if(connection){
+      connection.once('open', ()=> {
+        app.listen(PORT, ()=> {
+          console.log(`API server running on port ${PORT}`)
+        })
+      })
+    };
+
+  } catch (error){
+    console.log(error);
+  }
+};
+
+start();
+
+//est socket web socket connection to server
+const io = socket(server, {
+  cors:{
+    origin: 'http://localhost:3000',
+    credentials: true,
+  },
 });
 
+io.on('connection', (socket) => {
+  global.chatSocket = socket;
+  socket.on('add-user', (userId)=>{
+    onlineUsers.set(userId,socket.id);
+  });
 
-
-// Create a new instance of an Apollo server with the GraphQL schema
-const startApolloServer = async (typeDefs, resolvers) => {
-  await server.start();
-  server.applyMiddleware({ app });
-  
-  db.once('open', () => {
-    app.listen(PORT, () => {
-      console.log(`API server running on port ${PORT}!`);
-      console.log(`Use GraphQL at http://localhost:${PORT}${server.graphqlPath}`);
-    })
-  })
-  };
-  
- const io = new Server (server, {
-    pingTimeout: 60000,
-    cors: {
-        origin: "*",
-    },
- });
-
- io.on('connection', (socket) => {
-    socket.on("setup", (user) => {
-        socket.join(user._id);
-
-        socket.emit('connected')
-    });
-
-    socket.on("join-message-thread", (conversation) => {
-        socket.join(conversation);
-    })
- });
-  // Call the async function to start the server
-  startApolloServer(typeDefs, resolvers);
+  socket.on('send-message', (data) => {
+    const sendUserInfo = onlineUsers.get(data.to);
+      if(sendUserInfo){
+        socket.to(sendUserInfo).emit("message-delivered", data.message);
+      }
+  });
+});

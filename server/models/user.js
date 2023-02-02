@@ -8,13 +8,19 @@ const userSchema = new Schema ({
         unique:true,
         match:[/.+@.+\..+/, 'Must match an email address!'],
     },
-    photo:{
+    avatar:{
         type: String,
         required: false
     }, 
+    isImageSet:{
+        type: Boolean,
+        default: false
+    },
     username:{
         type: String,
         required: true,
+        min: 4,
+        max: 25,
         unique:true,
         trim: true,
 

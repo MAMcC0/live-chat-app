@@ -8,12 +8,20 @@ const messageSchema = new Schema({
         minlength: 1,
         maxlength: 280,
 },
+    sender: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    chat: {
+        type: Schema.Types.ObjectId,
+        ref: 'Conversation'
+    },
     isRead:{
         type:Boolean
     },
 
 });
 
-const Message = model('Workout', workoutSchema);
+const Message = model('Message', messageSchema);
 
 module.exports = Message;
