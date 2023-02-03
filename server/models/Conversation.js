@@ -17,23 +17,8 @@ const conversationSchema = new Schema ({
     }],
 });
 
-conversationSchema("remove", document => {
-    const conversationId = document._id;
-    Message.find({ conversations:
-    {$in: [conversationId]}
-}).then(messages => {
-    Promise.all(
-        messages.map( message =>
-            Message.findOneAndUpdate(
-                message._id,
-                { $pull: {conversations: conversationId}},
-                {new: true}
-            ))
-    );
-});
-});
 
-conversationSchema("remove", document => {
+conversationSchema.pre("deleteOne", document => {
     const conversationId = document._id;
     User.find({ conversations:
     {$in: [conversationId]}

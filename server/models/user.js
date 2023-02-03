@@ -33,6 +33,11 @@ const userSchema = new Schema ({
     online:{
         type:Boolean
     },
+    contacts: [
+        {type: Schema.Types.ObjectId,
+         ref: 'user'
+        },
+    ]
     
 });
 

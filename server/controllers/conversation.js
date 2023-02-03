@@ -13,35 +13,44 @@ const {Message, Conversation, User} = require('../models/index');
 
 //get all conversations for a user
 router.get('./conversations', async (req, res) =>  {
+    //may have to access id differently
+    // will have to seed and check for memory overuse of 100 RAM
+    let user = mongoose.Types.ObjectId(signToken._id);
+
     if(signToken){
         try{
-            let userId = signToken.id;
+            //use aggregation pipline that refers to user model for recipients from
+            //logged in user
             userConversationData = await Conversation.aggregate([
                 {
                     $lookup: {
-                        from: 'user',
+                        from: 'users',
                         localField: 'recipients',
-                        foreignField: '_id',
-                        as: 'conversationObj',
+                        foreignField: "_id",
+                        as: "conversationObj"
                     },
                 },
             ]).match({
-                recipients:{
-                    //may have to change how to get recipients id
-                    $all: [{ $elemMatch: {$eq: req.body.user._id}}]
+                //all recipients that match the user id established on line 17
+                recipients: {
+                    $all: [{
+                        $elemMatch: {
+                            $eq: user
+                        }
+                    }]
                 }
             }).project({
-                //look up project method properties
+                //exclude password and mongo version number from results
                 'conversationObj.password': 0,
-                'conversationObj.date': 0,
+                'conversationObj.__v': 0,
             }).exec((err, conversations) => {
                 if (err) {
                     console.log(err);
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({message:'failure'}));
-                    res.sendStatus(500)
+                    res.sendStatus(500);
                 } else {
-                    res.send(conversations)
+                    res.send(conversations);
                 }
             });
 
@@ -59,7 +68,7 @@ router.post('./conversations/new', async (req, res) => {
         try{
             let newConversation = await Conversation.create(
                 { recipients: [req.body.recipientId],
-                  sender: req.body.user._id,
+                  sender: signToken._id,
                 }
             )
 
@@ -84,11 +93,16 @@ router.post('./conversations/new', async (req, res) => {
 router.delete('/conversation/:id', async (req, res) => {
     if(signToken){
         try{
-            let deletedConversation = Conversation.deleteOne
+            let deletedConversation = await Conversation.deleteOne(
+                {_id: req.body._id}
+            )
+            return res.status(200).json({message:"Conversation successfully deleted!"})
         } catch (err) {
            return res.status(400).json(err);
         }
     } else {
         return res.status(500).json({message: "Please log in to access this content!"});
     }
-})
+});
+
+module.exports = router;

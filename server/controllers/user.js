@@ -63,5 +63,26 @@ router.post('/login', async (req, res) => {
     }
 })
 
-//add another User to users contact list
-//add contact list to model
+router.post('/add-contact', async (req, res) => {
+    if(signToken){
+        try {
+            let newContact = await User.findOne(
+                { $where: username = req.body.username},
+            ).then(
+                User.findOneAndUpdate(
+                    {_id: signToken._id},
+                    //may not have to push id
+                    {$push: { contacts: newContact._id}},
+                    { new: true},
+                )
+            )
+            return res.status(200).json({message: "A new friend has landed!"})
+        } catch (error) {
+            return res.status(400).json(error);
+        }
+    } else {
+        return res.status(400).json({message: "You must be logged in to add a friend!"})
+    }
+})
+
+

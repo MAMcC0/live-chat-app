@@ -5,17 +5,11 @@ const router = express.Router();
 
 const {Message, Conversation, User} = require('../models/index');
 
-
-// get all messages for a conversation
-// send a message
-// get message from a conversation based on search
-
-//get all messages for a single conversation
 router.get('/conversation/:id/messages', async (req, res) => {
     if(signToken){
         try {
-          const conversationData = await Conversation.findById(req.body._id)
-            .populate({path: 'message'})
+          const conversationData = await Conversation.findById({_id:req.body._id})
+            .populate({path: 'messages'})
             return res.status(200).json(conversationData);
         } catch(err) {
             res.status(400).json(err);
@@ -27,7 +21,7 @@ router.get('/conversation/:id/messages', async (req, res) => {
 });
 
 //create a new message in the database
-router.post("./conversation/new-message", async (req, res) => {
+router.post("./conversation/:id/new-message", async (req, res) => {
     if(signToken){
         try {
             //should this be findOneandUpdate for conversation?
@@ -35,7 +29,14 @@ router.post("./conversation/new-message", async (req, res) => {
                 message: req.body.messageBody,
                 sender: signToken._id
             })
-            return res.status(200).json(message);
+                let updatedUser = await User.findOneAndUpdate(
+                    {_id: req.body.recipientId},
+                    {$where: {_id: req.body.conversationId}},
+                    {$push: {messages: message}},
+                    { new: true},
+                ).populate({path:'messages'})
+            
+            return res.status(200).json(updatedUser);
         } catch (err){
             return res.status(400).json(err);
         };
@@ -44,6 +45,5 @@ router.post("./conversation/new-message", async (req, res) => {
     }
 });
 
-router.get('/conversation/search', (req, res) => {
 
-})
+module.exports = router;
