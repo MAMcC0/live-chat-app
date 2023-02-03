@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 const {Message, Conversation, User} = require('../models/index');
-const { rawListeners } = require('../models/Conversation');
+
 
 //get all conversaations for a user
 //create a new conversation
@@ -81,4 +81,14 @@ router.post('./conversations/new', async (req, res) => {
     }
 });
 
-router.delete('/conversation/:id', async (req, res) =>)
+router.delete('/conversation/:id', async (req, res) => {
+    if(signToken){
+        try{
+            let deletedConversation = Conversation.deleteOne
+        } catch (err) {
+           return res.status(400).json(err);
+        }
+    } else {
+        return res.status(500).json({message: "Please log in to access this content!"});
+    }
+})
